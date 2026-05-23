@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const cloudinary = require('cloudinary').v2;
 const multer = require('multer');
 const { authenticate } = require('../middleware/auth');
+const cloudinary = require('cloudinary').v2;
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -11,22 +11,30 @@ cloudinary.config({
 });
 
 const storage = multer.memoryStorage();
-const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } }); // 5MB
+const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } });
 
 router.post('/image', authenticate, upload.single('image'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
     const result = await new Promise((resolve, reject) => {
-      cloudinary.uploader.upload_stream(
-        { folder: 'dineflow/menu', transformation: [{ width: 600, height: 600, crop: 'fill', quality: 'auto' }] },
-        (error, result) => { if (error) reject(error); else resolve(result); }
-      ).end(req.file.buffer);
+      const stream = cloudinary.uploader.upload_stream(
+        {
+          folder: 'dineflow/menu',
+          transformation: [{ width: 600, height: 600, crop: 'fill', quality: 'auto' }]
+        },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        }
+      );
+      stream.end(req.file.buffer);
     });
 
     res.json({ url: result.secure_url, publicId: result.public_id });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Cloudinary upload error:', err);
+    res.status(500).json({ error: 'Upload failed: ' + err.message });
   }
 });
 
