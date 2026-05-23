@@ -3,6 +3,8 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
+const Restaurant = require('../models/Restaurant');
+const { authenticate } = require('../middleware/auth');
 
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
@@ -20,7 +22,12 @@ router.post('/login', async (req, res) => {
       { expiresIn: '7d' }
     );
 
-    res.json({ token, user: { id: user._id, email: user.email, role: user.role, name: user.name } });
+    let restaurant = null;
+    if (user.restaurantId) {
+      restaurant = await Restaurant.findById(user.restaurantId).select('name slug taxRate settings subscription');
+    }
+
+    res.json({ token, user: { id: user._id, email: user.email, role: user.role, name: user.name, restaurantId: user.restaurantId, restaurant } });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
