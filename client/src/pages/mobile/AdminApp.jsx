@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LayoutDashboard, ShoppingBag, UtensilsCrossed, BarChart2, LogOut, CheckCircle, Clock, ChefHat, Bell, Truck, X, RefreshCw, TrendingUp, Users, DollarSign } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { getAdminOrders, updateOrderStatus, getAnalytics, getMenu, toggleMenuItem } from '../../services/api';
+import { getOrders, updateOrderStatus, getDashboard, getMenu, toggleMenuItem } from '../../services/api';
 import { joinKitchen, getSocket } from '../../services/socket';
 import toast from 'react-hot-toast';
 
@@ -195,7 +195,7 @@ export default function AdminApp() {
 
   const loadOrders = async () => {
     try {
-      const { data } = await getAdminOrders({ status: 'all', limit: 50 });
+      const { data } = await getOrders({ status: 'all', limit: 50 });
       setOrders(data.orders || data);
     } catch { toast.error('Failed to load orders'); }
     finally { setLoading(false); }
@@ -203,7 +203,7 @@ export default function AdminApp() {
 
   const loadStats = async () => {
     try {
-      const { data } = await getAnalytics('today');
+      const { data } = await getDashboard();
       setStats(data);
     } catch {}
   };
