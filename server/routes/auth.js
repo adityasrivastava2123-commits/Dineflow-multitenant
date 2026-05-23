@@ -4,7 +4,23 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const Restaurant = require('../models/Restaurant');
-const { authenticate } = require('../middleware/auth');
+
+// GET /me - inline authenticate to avoid circular dependency
+const jwt = require('jsonwebtoken');
+const getMe = async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'No token' });
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.userId).select('-password');
+    if (!user) return res.status(401).json({ error: 'User not found' });
+    let restaurant = null;
+    if (user.restaurantId) {
+      restaurant = await Restaurant.findById(user.restaurantId).select('name slug taxRate settings subscription');
+    }
+    res.json({ user: { ...user._doc, restaurant } });
+  } catch { res.status(401).json({ error: 'Invalid token' }); }
+};
 
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
@@ -75,8 +91,6 @@ router.post('/customer-identify', async (req, res) => {
 
 // GET /api/auth/me
 const { authenticate } = require('../middleware/auth');
-router.get('/me', authenticate, (req, res) => {
-  res.json({ user: req.user });
-});
+router.get('/me', getMe);
 
 module.exports = router;
