@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LayoutDashboard, ShoppingBag, UtensilsCrossed, BarChart2, LogOut, CheckCircle, Clock, ChefHat, Bell, Truck, X, RefreshCw, TrendingUp, Users, DollarSign } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { getOrders, updateOrderStatus, getDashboard, getMenu, toggleMenuItem } from '../../services/api';
+import { getOrders, updateOrderStatus, getDashboard, getMenu, toggleMenuItem, getAdminRestaurant } from '../../services/api';
 import { joinKitchen, getSocket } from '../../services/socket';
 import toast from 'react-hot-toast';
 
@@ -135,18 +135,31 @@ function Dashboard({ stats }) {
   );
 }
 
-function MenuTab({ restaurantSlug }) {
+function MenuTab() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [slug, setSlug] = useState(null);
 
   useEffect(() => {
-    if (!restaurantSlug) { setError('Restaurant not found'); setLoading(false); return; }
-    getMenu(restaurantSlug)
-      .then(({ data }) => setItems(data.menu || data))
-      .catch(() => setError('Failed to load menu'))
-      .finally(() => setLoading(false));
-  }, [restaurantSlug]);
+    const load = async () => {
+      try {
+        // First get the restaurant details to get slug
+        const { data: restData } = await getAdminRestaurant();
+        const restaurantSlug = restData?.slug || restData?.restaurant?.slug;
+        setSlug(restaurantSlug);
+        if (!restaurantSlug) { setError('Restaurant slug not found'); return; }
+        // Then get menu using slug
+        const { data } = await getMenu(restaurantSlug);
+        setItems(data.menu || []);
+      } catch (err) {
+        setError('Failed to load menu: ' + (err.response?.data?.error || err.message));
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
 
   const handleToggle = async (id) => {
     try {
@@ -300,7 +313,7 @@ export default function AdminApp() {
         </div>
       )}
 
-      {tab === 'menu' && <MenuTab restaurantSlug={user?.restaurant?.slug} />}
+      {tab === 'menu' && <MenuTab />}
 
       {/* Bottom navigation */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-stone-100 px-2 py-2 flex">
