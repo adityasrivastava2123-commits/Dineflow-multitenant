@@ -138,10 +138,15 @@ function Dashboard({ stats }) {
 function MenuTab({ restaurantSlug }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    getMenu(restaurantSlug).then(({ data }) => setItems(data.menu)).finally(() => setLoading(false));
-  }, []);
+    if (!restaurantSlug) { setError('Restaurant not found'); setLoading(false); return; }
+    getMenu(restaurantSlug)
+      .then(({ data }) => setItems(data.menu || data))
+      .catch(() => setError('Failed to load menu'))
+      .finally(() => setLoading(false));
+  }, [restaurantSlug]);
 
   const handleToggle = async (id) => {
     try {
@@ -149,6 +154,14 @@ function MenuTab({ restaurantSlug }) {
       setItems((prev) => prev.map((i) => i._id === id ? data : i));
     } catch { toast.error('Failed'); }
   };
+
+  if (error) return (
+    <div className="text-center py-16">
+      <div className="text-5xl mb-3">⚠️</div>
+      <p className="text-stone-400 font-bold">{error}</p>
+      <p className="text-stone-400 text-sm mt-1">Slug: {restaurantSlug || 'not found'}</p>
+    </div>
+  );
 
   if (loading) return <div className="flex justify-center py-20"><div className="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" /></div>;
 
