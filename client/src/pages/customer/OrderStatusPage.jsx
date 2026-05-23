@@ -250,7 +250,7 @@ export default function OrderStatusPage() {
           <div className="card p-4 text-sm text-stone-500">
             <p className="font-semibold text-stone-700 mb-1">{order.restaurantId.name}</p>
             <p>Table {order.tableNumber}</p>
-            {order.restaurantId.phone && <p>{order.restaurantId.phone}</p>}
+            {order.customerPhone && <p>📞 {order.customerPhone}</p>}
             <p className="mt-2 text-xs">Ordered at {new Date(order.createdAt).toLocaleString('en-IN')}</p>
           </div>
         )}
